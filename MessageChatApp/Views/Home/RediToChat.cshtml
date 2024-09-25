@@ -1,0 +1,167 @@
+﻿@model MessageChatApp.Models.ViewModels.ChatViewModel
+
+@{
+    ViewData["Title"] = "Message";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container-fluid h-100">
+    <div class="row justify-content-center h-100">
+        <div class="col-md-4 col-xl-3 chat">
+            <div class="card mb-sm-3 mb-md-0 contacts_card">
+                <div class="card-header">
+                    <div class="input-group">
+                        <input type="text" placeholder="Search..." name="" class="form-control search">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text search_btn"><i class="fas fa-search"></i></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body contacts_body">
+                </div>
+                <div class="card-footer"></div>
+            </div>
+        </div>
+        <div class="col-md-8 col-xl-6 chat">
+            <div class="card">
+                <div class="card-header msg_head">
+                    <div class="d-flex bd-highlight">
+                        <div class="img_cont">
+                            <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img">
+                            <span class="online_icon"></span>
+                        </div>
+                        <div class="user_info">
+                            <span>@Model.UserName </span>
+                            <p>@Model.Messages.Count() Messages</p>
+                            <input type="hidden" id="userInput" class="current-user-id" value="@Model.CurrentUserId"></input>
+                            <input type="hidden" id="idConversation" value="@Model.Conversation.ConversationId"></input>
+                        </div>
+                        <div class="video_cam">
+                            <span><i class="fas fa-video"></i></span>
+                            <span><i class="fas fa-phone"></i></span>
+                        </div>
+                    </div>
+                    <span id="action_menu_btn"><i class="fas fa-ellipsis-v"></i></span>
+                    <div class="action_menu">
+                        <ul>
+                            <li><i class="fas fa-user-circle"></i> View profile</li>
+                            <li><i class="fas fa-users"></i> Add to close friends</li>
+                            <li><i class="fas fa-plus"></i> Add to group</li>
+                            <li><i class="fas fa-ban"></i> Block</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body msg_card_body" id="messagesList">
+                    @foreach (var message in Model.Messages)
+                    {
+                        <input type="hidden" id="senderId" value="@message.SenderId"></input>
+                        @* <span>@message.SenderId     @Model.CurrentUserId</span> *@
+
+                        if (message.SenderId == Model.CurrentUserId)
+                        {
+
+                            <div class="d-flex justify-content-end mb-4">
+                                <div class="msg_cotainer_send">
+                                    @message.Content
+                                    @* <span class="msg_time">@message.SentAt.ToString("hh:mm tt, dddd, MMMM dd yyyy")</span> *@
+                                    <span class="msg_time">@message.SentAt</span>
+
+                                </div>
+                                <div class="img_cont_msg">
+                                    <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="d-flex justify-content-start mb-4">
+
+                                <div class="img_cont_msg">
+                                    <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
+                                </div>
+                                <div class="msg_cotainer">
+                                    @message.Content
+                                    <span class="msg_time">@message.SentAt</span>
+                                </div>
+
+                            </div>
+                        }
+                    }
+
+                </div>
+                <div class="card-footer">
+                    <div class="input-group">
+                        <div class="input-group-append">
+                            <span class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></span>
+                        </div>
+                        <textarea name="" class="form-control type_msg" id="messageInput" placeholder="Type your message..."></textarea>
+                        <div class="input-group-append">
+                            <span class="input-group-text send_btn" id="sendButton"><i class="fas fa-location-arrow"></i></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
+<script>
+    const connection = new signalR.HubConnectionBuilder().withUrl("/chathub").build();
+    const idSender = document.getElementById("senderId").value;
+    const user = document.getElementById("userInput").value;
+
+
+    connection.on("ReceiveMessage", function (username, message) {
+        const msg = document.createElement("div");
+
+        let renderMess = '';
+
+        if (user == idSender) {
+            renderMess = `
+                <div class="d-flex justify-content-end mb-4">
+                    <div class="msg_cotainer_send">
+                        ${message}
+                        <span class="msg_time">Today</span>
+                    </div>
+                    <div class="img_cont_msg">
+                        <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
+                    </div>
+                </div>`;
+        } else {
+            renderMess = `
+                <div class="d-flex justify-content-start mb-4">
+                    <div class="img_cont_msg">
+                            <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
+                        </div>
+                    <div class="msg_cotainer">
+                        ${message}
+                        <span class="msg_time">Today</span>
+                    </div>
+                </div>`;
+        }
+
+        msg.innerHTML = renderMess;
+
+        document.getElementById("messagesList").appendChild(msg);
+    });
+
+    connection.start().then(function () {
+        // console.log("SignalR Connected");
+    }).catch(function (err) {
+        console.error("SignalR connection error: ", err.toString());
+    });
+
+    document.getElementById("sendButton").addEventListener("click", function (event) {
+        const message = document.getElementById("messageInput").value;
+        const idCon = document.getElementById("idConversation").value;
+
+        connection.invoke("SendMessage", idCon, user, message).then(function () {
+        }).catch(function (err) {
+            console.error("Error sending message: ", err.toString());
+        });
+        event.preventDefault();
+        document.getElementById("messageInput").value = "";
+    });
+</script>
+
