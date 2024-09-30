@@ -3,38 +3,48 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace MessageChatApp.Hubs
 {
-	public class ChatHub : Hub
-	{
+    public class ChatHub : Hub
+    {
 
-		private readonly IServiceProvider _serviceProvider;
+        private readonly IServiceProvider _serviceProvider;
 
-		public ChatHub(IServiceProvider serviceProvider)
-		{
-			_serviceProvider = serviceProvider;
-		}
+        public ChatHub(IServiceProvider serviceProvider)
+        {
+            _serviceProvider = serviceProvider;
+        }
 
-		public async Task SendMessage(string idCon, string user, string message)
-		{
-			using (var scope = _serviceProvider.CreateScope())
-			{
-				var dbContext = scope.ServiceProvider.GetRequiredService<DBContext>();
+        public async Task SendMessage(string idCon, string senderId, string message)
+        {
+            try
+            {
 
-				var newMessage = new TbMessage
-				{
-					ConversationId = int.Parse(idCon),
-					SenderId = int.Parse(user),
-					Content = message,
-					SentAt = DateTime.Now
-				};
+                using (var scope = _serviceProvider.CreateScope())
+                {
+                    var dbContext = scope.ServiceProvider.GetRequiredService<DBContext>();
 
-				dbContext.TbMessages.Add(newMessage);
-				await dbContext.SaveChangesAsync();
-			}
+                    var newMessage = new TbMessage
+                    {
+                        ConversationId = int.Parse(idCon),
+                        SenderId = int.Parse(senderId),
+                        Content = message,
+                        SentAt = DateTime.Now,
+                    };
 
-			await Clients.All.SendAsync("ReceiveMessage", user, message);
-		}
+                    dbContext.TbMessages.Add(newMessage);
+                    await dbContext.SaveChangesAsync();
+                }
 
-	}
+                await Clients.All.SendAsync("ReceiveMessage", senderId, message);
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+
+    }
 
 
 }

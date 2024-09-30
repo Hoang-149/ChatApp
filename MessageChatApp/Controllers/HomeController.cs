@@ -27,6 +27,7 @@ namespace MessageChatApp.Controllers
         public IActionResult Index()
         {
             var currentUser = HttpContext.Session.GetString("UserId");
+            var currentUserName = HttpContext.Session.GetString("UserName");
 
             if (!int.TryParse(currentUser, out int currentUserId))
             {
@@ -39,7 +40,39 @@ namespace MessageChatApp.Controllers
             Console.WriteLine($"currentUser: {currentUser}");
 
             var getAllUsers = _db.TbUsers.Where(u => u.UserId != currentUserId).ToList();
-            return View(getAllUsers);
+
+			var usersMessagedWith = _db.TbConversationMembers
+                                            .Where(cm => cm.UserId == currentUserId)
+                                            .Select(cm => cm.ConversationId)
+                                            .Distinct()
+                                            .Join(_db.TbMessages, cId => cId, msg => msg.ConversationId, (cId, msg) => new { cId, msg })
+											.Where(x => x.msg.Content != null && x.msg.Content != "")
+											.Select(x => x.cId)
+                                            .Distinct()
+											.Join(_db.TbConversationMembers, cId => cId, cm => cm.ConversationId, (cId, cm) => cm)
+                                            .Where(cm => cm.UserId != currentUserId)
+                                            .Select(cm => cm.User)
+                                            .Distinct()
+                                            .ToList();
+
+			//var conversation = _db.TbConversations
+			//							.Where(c => !c.IsGroup)
+			//							.Join(_db.TbConversationMembers, c => c.ConversationId, m => m.ConversationId,
+			//								(c, m) => new { c, m })
+			//							.Where(cm => cm.m.UserId == id || cm.m.UserId == currentUserId)
+			//							.GroupBy(cm => cm.c.ConversationId) // Nhóm theo ConversationId để kiểm tra thành viên
+			//							.Where(g => g.Count() == 2)
+			//							.Select(g => g.FirstOrDefault().c)
+			//							.FirstOrDefault();
+
+			var model = new UserViewModel
+            {
+                Users = getAllUsers,
+                CurrentUserName = currentUserName,
+                UsersWith = usersMessagedWith
+            };
+
+            return View(model);
         }
 
 
@@ -113,9 +146,8 @@ namespace MessageChatApp.Controllers
             if (user != null)
             {
                 HttpContext.Session.SetString("UserId", user.UserId.ToString());
+                HttpContext.Session.SetString("UserName", user.UserName);
                 HttpContext.Session.SetString("UserEmail", user.Email);
-
-                _logger.LogInformation($"Session lưu thành công: UserId = {HttpContext.Session.GetString("UserId")}, UserEmail = {HttpContext.Session.GetString("UserEmail")}");
 
                 TempData["Message"] = "Đăng nhập thành công!";
                 return RedirectToAction("Index");
@@ -147,27 +179,17 @@ namespace MessageChatApp.Controllers
             if (string.IsNullOrEmpty(currentUserIdStr) || !int.TryParse(currentUserIdStr, out int currentUserId))
             {
                 _logger.LogInformation("Invalid or missing UserId in session");
-                return RedirectToAction("Error"); // Handle invalid session case
+                return RedirectToAction("Error");
             }
 
-
-            //var conversation = _db.TbConversations
-            //	.Where(c => !c.IsGroup)
-            //	.Join(_db.TbConversationMembers, c => c.ConversationId, m => m.ConversationId,
-            //		(c, m) => new { c, m })
-            //             .Where(cm => (cm.m.UserId == id && cm.m.UserId == currentUserId))
-            //	//&& cm.c.TbConversationMembers.Count() == 2)
-            //             .Select(cm => cm.c)
-            //	.FirstOrDefault();
-
             var conversation = _db.TbConversations
-                                        .Where(c => !c.IsGroup) 
+                                        .Where(c => !c.IsGroup)
                                         .Join(_db.TbConversationMembers, c => c.ConversationId, m => m.ConversationId,
                                             (c, m) => new { c, m })
-                                        .Where(cm => cm.m.UserId == id || cm.m.UserId == currentUserId) 
+                                        .Where(cm => cm.m.UserId == id || cm.m.UserId == currentUserId)
                                         .GroupBy(cm => cm.c.ConversationId) // Nhóm theo ConversationId để kiểm tra thành viên
-                                        .Where(g => g.Count() == 2) 
-                                        .Select(g => g.FirstOrDefault().c) 
+                                        .Where(g => g.Count() == 2)
+                                        .Select(g => g.FirstOrDefault().c)
                                         .FirstOrDefault();
 
 
@@ -199,12 +221,9 @@ namespace MessageChatApp.Controllers
 
                 conversation = newConversation;
 
-                //_logger.LogInformation($" Conversation 2: {conversation}");
-
             }
             else
             {
-                //_logger.LogInformation($" Conversation 3: {conversation}");
 
             }
 
@@ -220,7 +239,7 @@ namespace MessageChatApp.Controllers
                 UserId = user?.UserId ?? 0,
                 CurrentUserId = currentUserId
             };
-            Console.WriteLine($"model: {model}");
+
             return View("RediToChat", model);
         }
 

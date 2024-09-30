@@ -33,7 +33,8 @@
                         <div class="user_info">
                             <span>@Model.UserName </span>
                             <p>@Model.Messages.Count() Messages</p>
-                            <input type="hidden" id="userInput" class="current-user-id" value="@Model.CurrentUserId"></input>
+                            <input type="hidden" id="userIdReceive" class="receive-user-id" value="@Model.UserId"></input>
+                            <input type="hidden" id="userIdCurrent" class="current-user-id" value="@Model.CurrentUserId"></input>
                             <input type="hidden" id="idConversation" value="@Model.Conversation.ConversationId"></input>
                         </div>
                         <div class="video_cam">
@@ -52,40 +53,46 @@
                     </div>
                 </div>
                 <div class="card-body msg_card_body" id="messagesList">
-                    @foreach (var message in Model.Messages)
+                    @if (Model.Messages != null && Model.Messages.Any())
                     {
-                        <input type="hidden" id="senderId" value="@message.SenderId"></input>
-                        @* <span>@message.SenderId     @Model.CurrentUserId</span> *@
-
-                        if (message.SenderId == Model.CurrentUserId)
+                        @foreach (var message in Model.Messages)
                         {
+                            <input type="hidden" id="senderId" value="@((message.SenderId != null) ? message.SenderId : "")" />
 
-                            <div class="d-flex justify-content-end mb-4">
-                                <div class="msg_cotainer_send">
-                                    @message.Content
-                                    @* <span class="msg_time">@message.SentAt.ToString("hh:mm tt, dddd, MMMM dd yyyy")</span> *@
-                                    <span class="msg_time">@message.SentAt</span>
+                            if (message.SenderId == Model.CurrentUserId)
+                            {
+
+                                <div class="d-flex justify-content-end mb-4">
+                                    <div class="msg_cotainer_send">
+                                        @message.Content
+                                        @* <span class="msg_time">@message.SentAt.ToString("hh:mm tt, dddd, MMMM dd yyyy")</span> *@
+                                        <span class="msg_time">@message.SentAt</span>
+
+                                    </div>
+                                    <div class="img_cont_msg">
+                                        <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="d-flex justify-content-start mb-4">
+
+                                    <div class="img_cont_msg">
+                                        <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
+                                    </div>
+                                    <div class="msg_cotainer">
+                                        @message.Content
+                                        <span class="msg_time">@message.SentAt</span>
+                                    </div>
 
                                 </div>
-                                <div class="img_cont_msg">
-                                    <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
-                                </div>
-                            </div>
+                            }
                         }
-                        else
-                        {
-                            <div class="d-flex justify-content-start mb-4">
-
-                                <div class="img_cont_msg">
-                                    <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
-                                </div>
-                                <div class="msg_cotainer">
-                                    @message.Content
-                                    <span class="msg_time">@message.SentAt</span>
-                                </div>
-
-                            </div>
-                        }
+                    }
+                    else
+                    {
+                        <input type="hidden" id="senderId" value="" />
                     }
 
                 </div>
@@ -108,37 +115,38 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
 <script>
     const connection = new signalR.HubConnectionBuilder().withUrl("/chathub").build();
-    const idSender = document.getElementById("senderId").value;
-    const user = document.getElementById("userInput").value;
 
+    let userIdSender = document.getElementById("userIdCurrent").value;
+    const userIdReceive = document.getElementById("userIdReceive").value;
 
-    connection.on("ReceiveMessage", function (username, message) {
+    connection.on("ReceiveMessage", function (senderId, message) {
+
         const msg = document.createElement("div");
 
         let renderMess = '';
 
-        if (user == idSender) {
-            renderMess = `
-                <div class="d-flex justify-content-end mb-4">
-                    <div class="msg_cotainer_send">
-                        ${message}
-                        <span class="msg_time">Today</span>
-                    </div>
-                    <div class="img_cont_msg">
-                        <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
-                    </div>
-                </div>`;
+        if (!senderId) return
+
+        if (userIdSender == senderId) {
+            renderMess = `<div class="d-flex justify-content-end mb-4">
+                            <div class="msg_cotainer_send">
+                                ${message}
+                                <span class="msg_time">Today</span>
+                            </div>
+                            <div class="img_cont_msg">
+                                <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
+                            </div>
+                        </div>`;
         } else {
-            renderMess = `
-                <div class="d-flex justify-content-start mb-4">
-                    <div class="img_cont_msg">
-                            <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
-                        </div>
-                    <div class="msg_cotainer">
-                        ${message}
-                        <span class="msg_time">Today</span>
-                    </div>
-                </div>`;
+            renderMess = `<div class="d-flex justify-content-start mb-4">
+                                <div class="img_cont_msg">
+                                        <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
+                                    </div>
+                                <div class="msg_cotainer">
+                                    ${message}
+                                    <span class="msg_time">Today</span>
+                                </div>
+                            </div>`;
         }
 
         msg.innerHTML = renderMess;
@@ -155,8 +163,10 @@
     document.getElementById("sendButton").addEventListener("click", function (event) {
         const message = document.getElementById("messageInput").value;
         const idCon = document.getElementById("idConversation").value;
+        const idSender = document.getElementById("userIdCurrent").value || "";
 
-        connection.invoke("SendMessage", idCon, user, message).then(function () {
+        connection.invoke("SendMessage", idCon, idSender, message).then(function () {
+            console.log("test");
         }).catch(function (err) {
             console.error("Error sending message: ", err.toString());
         });
