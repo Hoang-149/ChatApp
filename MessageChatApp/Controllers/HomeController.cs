@@ -3,10 +3,6 @@ using MessageChatApp.Models;
 using MessageChatApp.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.DotNet.Scaffolding.Shared.Messaging;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using NuGet.Protocol.Plugins;
 using System.Diagnostics;
 
 namespace MessageChatApp.Controllers
@@ -41,31 +37,22 @@ namespace MessageChatApp.Controllers
 
             var getAllUsers = _db.TbUsers.Where(u => u.UserId != currentUserId).ToList();
 
-			var usersMessagedWith = _db.TbConversationMembers
+            var usersMessagedWith = _db.TbConversationMembers
                                             .Where(cm => cm.UserId == currentUserId)
                                             .Select(cm => cm.ConversationId)
                                             .Distinct()
                                             .Join(_db.TbMessages, cId => cId, msg => msg.ConversationId, (cId, msg) => new { cId, msg })
-											.Where(x => x.msg.Content != null && x.msg.Content != "")
-											.Select(x => x.cId)
+                                            .Where(x => x.msg.Content != null && x.msg.Content != "")
+                                            .Select(x => x.cId)
                                             .Distinct()
-											.Join(_db.TbConversationMembers, cId => cId, cm => cm.ConversationId, (cId, cm) => cm)
+                                            .Join(_db.TbConversationMembers, cId => cId, cm => cm.ConversationId, (cId, cm) => cm)
                                             .Where(cm => cm.UserId != currentUserId)
                                             .Select(cm => cm.User)
                                             .Distinct()
                                             .ToList();
 
-			//var conversation = _db.TbConversations
-			//							.Where(c => !c.IsGroup)
-			//							.Join(_db.TbConversationMembers, c => c.ConversationId, m => m.ConversationId,
-			//								(c, m) => new { c, m })
-			//							.Where(cm => cm.m.UserId == id || cm.m.UserId == currentUserId)
-			//							.GroupBy(cm => cm.c.ConversationId) // Nhóm theo ConversationId để kiểm tra thành viên
-			//							.Where(g => g.Count() == 2)
-			//							.Select(g => g.FirstOrDefault().c)
-			//							.FirstOrDefault();
 
-			var model = new UserViewModel
+            var model = new UserViewModel
             {
                 Users = getAllUsers,
                 CurrentUserName = currentUserName,
@@ -243,8 +230,49 @@ namespace MessageChatApp.Controllers
             return View("RediToChat", model);
         }
 
+        [HttpPost]
+        public IActionResult SendImage(ImageMessageViewModel imageMessageViewModel, [FromRoute] int id)
+        {
+            if (ModelState.IsValid && imageMessageViewModel.ImageUpload != null)
+            {
+                // Đường dẫn lưu ảnh trong thư mục `wwwroot/images`
+                string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+                string uniqueFileName = Guid.NewGuid().ToString() + "_" + imageMessageViewModel.ImageUpload.FileName;
+
+                // Đường dẫn đầy đủ của file ảnh
+                string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+                // Lưu tệp ảnh vào thư mục
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    imageMessageViewModel.ImageUpload.CopyTo(fileStream);
+                }
+
+                var currentUserIdStr = HttpContext.Session.GetString("UserId");
+
+                if (string.IsNullOrEmpty(currentUserIdStr) || !int.TryParse(currentUserIdStr, out int currentUserId))
+                {
+                    _logger.LogInformation("Invalid or missing UserId in session");
+                    return RedirectToAction("Error");
+                }
+
+                // Tạo đối tượng `TbImageMessages` và lưu tên file vào CSDL
+                TbMessage image = new TbMessage
+                {
+                    ConversationId = id,
+                    SenderId = currentUserId,
+                    Content = uniqueFileName,
+                    SentAt = DateTime.Now,
+                };
+
+                _db.TbMessages.Add(image);
+                _db.SaveChanges();
+
+
+                return NoContent();
+            }
+            return View(imageMessageViewModel);
+        }
 
     }
-
-
 }

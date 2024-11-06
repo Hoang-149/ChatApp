@@ -17,6 +17,14 @@
       "PackagePath": "staticwebassets\\favicon.ico"
     },
     {
+      "Id": "D:\\Works\\C#\\MessageChatApp\\MessageChatApp\\wwwroot\\images\\0c0db9e2-6c1d-4701-9911-929f81059c98_avt.png",
+      "PackagePath": "staticwebassets\\images\\0c0db9e2-6c1d-4701-9911-929f81059c98_avt.png"
+    },
+    {
+      "Id": "D:\\Works\\C#\\MessageChatApp\\MessageChatApp\\wwwroot\\images\\23fc9785-8aff-4d4f-961e-f68ff1264115_t9.png",
+      "PackagePath": "staticwebassets\\images\\23fc9785-8aff-4d4f-961e-f68ff1264115_t9.png"
+    },
+    {
       "Id": "D:\\Works\\C#\\MessageChatApp\\MessageChatApp\\wwwroot\\js\\site.js",
       "PackagePath": "staticwebassets\\js\\site.js"
     },

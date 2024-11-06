@@ -13,10 +13,16 @@ namespace MessageChatApp.Hubs
             _serviceProvider = serviceProvider;
         }
 
-        public async Task SendMessage(string idCon, string senderId, string message)
+        public async Task SendMessage(string idCon, string senderId, string message, string imageMessage)
         {
             try
             {
+                if (imageMessage != null)
+                {
+                    Console.WriteLine("image: " + imageMessage);
+                    string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+                    //string uniqueFileName = Guid.NewGuid().ToString() + "_" + imageMessage.FileName;
+                }
 
                 using (var scope = _serviceProvider.CreateScope())
                 {

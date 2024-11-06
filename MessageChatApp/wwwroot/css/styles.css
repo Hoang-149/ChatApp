@@ -365,3 +365,28 @@ section .content .title {
 section .content p {
     text-align: justify;
 }
+
+.attact-file label {
+    height: 100%;
+    margin: 0;
+}
+
+span.input-group-text.attach_btn {
+    height: 100%;
+}
+
+.wrapper-content {
+    display: block;
+    flex: 1;
+}
+
+.wrapper-content img {
+    width: 54px;
+}
+
+
+
+
+
+
+

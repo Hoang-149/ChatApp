@@ -64,7 +64,19 @@
 
                                 <div class="d-flex justify-content-end mb-4">
                                     <div class="msg_cotainer_send">
-                                        @message.Content
+                                        @if (@message.Content.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                                       @message.Content.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                                       @message.Content.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                                       @message.Content.EndsWith(".gif", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <img src="~/images/@message.Content" alt="Uploaded Image" style="width:64px; height: auto;" />
+                                        }
+                                        else
+                                        {
+                                            <p>
+                                                @message.Content
+                                            </p>
+                                        }
                                         @* <span class="msg_time">@message.SentAt.ToString("hh:mm tt, dddd, MMMM dd yyyy")</span> *@
                                         <span class="msg_time">@message.SentAt</span>
 
@@ -82,7 +94,19 @@
                                         <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
                                     </div>
                                     <div class="msg_cotainer">
-                                        @message.Content
+                                        @if (@message.Content.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                                       @message.Content.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
+                                       @message.Content.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                                       @message.Content.EndsWith(".gif", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <img src="~/images/@message.Content" alt="Uploaded Image" style="width:64px; height: auto;" />
+                                        }
+                                        else
+                                        {
+                                            <p>
+                                                @message.Content
+                                            </p>
+                                        }
                                         <span class="msg_time">@message.SentAt</span>
                                     </div>
 
@@ -99,9 +123,18 @@
                 <div class="card-footer">
                     <div class="input-group">
                         <div class="input-group-append">
-                            <span class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></span>
+                            <form asp-action="SendImage" asp-route-id="@Model.Conversation.ConversationId" asp-controller="Home" enctype="multipart/form-data" method="post">
+                                <div class="attach-file">
+                                    <input type="file" style="display: none" name="imageUpload" id="imageUpload" accept=".png, .jpg, .jpeg">
+                                    <label for="imageUpload"><span class="input-group-text attach_btn"><i class="fas fa-paperclip"></i></span></label>
+                                </div>
+                                <input type="submit" value="Submit" class="btn btn-outline-primary" />
+                            </form>
                         </div>
-                        <textarea name="" class="form-control type_msg" id="messageInput" placeholder="Type your message..."></textarea>
+                        <div style="flex: 1;">
+                            <textarea name="" class="form-control type_msg" id="messageInput" placeholder="Type your message..."></textarea>
+                            <img id="previewImage" src="" alt="Image Preview" style="display: none; width: 64px; height: auto; margin-top: 8px;">
+                        </div>
                         <div class="input-group-append">
                             <span class="input-group-text send_btn" id="sendButton"><i class="fas fa-location-arrow"></i></span>
                         </div>
@@ -112,66 +145,4 @@
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
-<script>
-    const connection = new signalR.HubConnectionBuilder().withUrl("/chathub").build();
-
-    let userIdSender = document.getElementById("userIdCurrent").value;
-    const userIdReceive = document.getElementById("userIdReceive").value;
-
-    connection.on("ReceiveMessage", function (senderId, message) {
-
-        const msg = document.createElement("div");
-
-        let renderMess = '';
-
-        if (!senderId) return
-
-        if (userIdSender == senderId) {
-            renderMess = `<div class="d-flex justify-content-end mb-4">
-                            <div class="msg_cotainer_send">
-                                ${message}
-                                <span class="msg_time">Today</span>
-                            </div>
-                            <div class="img_cont_msg">
-                                <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
-                            </div>
-                        </div>`;
-        } else {
-            renderMess = `<div class="d-flex justify-content-start mb-4">
-                                <div class="img_cont_msg">
-                                        <img src="https://static.turbosquid.com/Preview/001292/481/WV/_D.jpg" class="rounded-circle user_img_msg">
-                                    </div>
-                                <div class="msg_cotainer">
-                                    ${message}
-                                    <span class="msg_time">Today</span>
-                                </div>
-                            </div>`;
-        }
-
-        msg.innerHTML = renderMess;
-
-        document.getElementById("messagesList").appendChild(msg);
-    });
-
-    connection.start().then(function () {
-        // console.log("SignalR Connected");
-    }).catch(function (err) {
-        console.error("SignalR connection error: ", err.toString());
-    });
-
-    document.getElementById("sendButton").addEventListener("click", function (event) {
-        const message = document.getElementById("messageInput").value;
-        const idCon = document.getElementById("idConversation").value;
-        const idSender = document.getElementById("userIdCurrent").value || "";
-
-        connection.invoke("SendMessage", idCon, idSender, message).then(function () {
-            console.log("test");
-        }).catch(function (err) {
-            console.error("Error sending message: ", err.toString());
-        });
-        event.preventDefault();
-        document.getElementById("messageInput").value = "";
-    });
-</script>
 
